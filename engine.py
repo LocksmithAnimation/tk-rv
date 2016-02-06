@@ -63,7 +63,6 @@ class RVEngine(Engine):
             tk_rv = self.import_module("tk_rv")
             self._menu_generator = tk_rv.MenuGenerator(self)
             self._menu_generator.create_menu()
-            self._menu_generator._cutz("")
 
     def destroy_engine(self):
         self.log_debug("%r: Destroying tk-rv engine." % self)
