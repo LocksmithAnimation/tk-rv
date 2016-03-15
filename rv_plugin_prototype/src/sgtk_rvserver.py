@@ -108,7 +108,8 @@ def createServer(cert, key) :
 
         deb ('Started httpserver on port %d' % PORT_NUMBER)
     except :
-        httpServer.socket.close()
+        if (httpServer and httpServer.socket) :
+            httpServer.socket.close()
         raise
 
     return httpServer

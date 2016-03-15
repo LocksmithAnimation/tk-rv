@@ -13,9 +13,13 @@ import cgi
 import sys
 import os
 
-import rv
+from PySide import QtCore
 
-class ToolkitBootstrap(rv.rvtypes.MinorMode):
+import rv.rvtypes as rvt
+import rv.commands as rvc
+import rv.extra_commands as rve
+
+class ToolkitBootstrap(rvt.MinorMode):
     """
     An RV mode that will handle bootstrapping SGTK and starting
     up the tk-rv engine. The mode expects an installation of
@@ -34,19 +38,55 @@ class ToolkitBootstrap(rv.rvtypes.MinorMode):
         super(ToolkitBootstrap, self).__init__()
 
         self._mode_name = "sgtk_bootstrap"
-        self.init(self._mode_name, None, None)
+        self.init(self._mode_name, None, None,
+                [("SG Review", [
+                    ("HTTP Server", None, None, lambda: rvc.DisabledMenuState),
+                    ("    Start Server", self.httpServerSetup, None, lambda: rvc.UncheckedMenuState),
+                    ("    Test Certificate", self.testCert, None, lambda: rvc.UncheckedMenuState),
+                    ("_", None)],
+                )])
 
-        # The menu generation code makes use of the TK_RV_MODE_NAME
-        # environment variable. Each menu that is created in RV is
-        # associated with a mode identified by its name. We need to
-        # make a note of our name as a result.
+        self.httpServerThread = None
+
+        # The menu generation code makes use of the TK_RV_MODE_NAME environment
+        # variable. Each menu item that is created in RV is associated with a
+        # mode identified by its name. We need to make a note of our name so we
+        # can add menu items for this mode later.
         os.environ["TK_RV_MODE_NAME"] = self._mode_name
+
+    def httpEventCallback(self, name, contents) :
+        log.debug("callback ---------------------------- current thread " + str(QtCore.QThread.currentThread()))
+        rve.displayFeedback(name + " " + contents, 2.5)
+        if (name == "external-gma-play-entity") :
+            rvc.stop()
+            log.debug("callback sendEvent %s '%s'" % (name, contents))
+            rvc.sendInternalEvent("id_from_gma", contents)
+            rvc.redraw()
+            rvc.play()
+        
+    def httpServerSetup(self, event) :
+        import sgtk_rvserver
+        log.debug("\n\n")
+        self.httpServerThread = sgtk_rvserver.RvServerThread(self.httpEventCallback)
+        self.httpServerThread.start()
+        log.debug("\n\n")
+
+    def testCert(self, event) :
+
+        # Start up server if it's not already going
+        if (not self.httpServerThread) :
+            self.httpServerSetup(None)
+
+        # Get port number from server itself
+        url = "https://localhost:" + str(self.httpServerThread.httpServer.server_address[1])
+        log.debug("open url: '%s'" % url)
+        rvc.openUrl(url)
 
     def activate(self):
         """
         Activates the RV mode and bootstraps SGTK.
         """
-        rv.rvtypes.MinorMode.activate(self)
+        rvt.MinorMode.activate(self)
 
         core = os.path.join(os.path.dirname(__file__), "sgtk_core")
         core = os.environ.get("TK_CORE") or core
@@ -102,7 +142,7 @@ class ToolkitBootstrap(rv.rvtypes.MinorMode):
         SGTK engine.
         """
         import sgtk
-        rv.rvtypes.MinorMode.deactivate(self)
+        rvt.MinorMode.deactivate(self)
 
         log.info("Shutting down engine...")
 
