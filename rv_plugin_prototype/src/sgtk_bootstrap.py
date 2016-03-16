@@ -15,6 +15,9 @@ import os
 
 from PySide import QtCore
 
+from pymu import MuSymbol
+
+import rv
 import rv.rvtypes as rvt
 import rv.commands as rvc
 import rv.extra_commands as rve
@@ -38,21 +41,40 @@ class ToolkitBootstrap(rvt.MinorMode):
         super(ToolkitBootstrap, self).__init__()
 
         self._mode_name = "sgtk_bootstrap"
-        self.init(self._mode_name, None, None,
+        self.init(self._mode_name, None,
+                [
+                    ("external-gma-play-entity", self.externalGMAPlayEntity, "")
+                ],
                 [("SG Review", [
                     ("HTTP Server", None, None, lambda: rvc.DisabledMenuState),
                     ("    Start Server", self.httpServerSetup, None, lambda: rvc.UncheckedMenuState),
                     ("    Test Certificate", self.testCert, None, lambda: rvc.UncheckedMenuState),
+                    ("GMA WebView", self.gmaWebView, None, lambda: rvc.UncheckedMenuState),
                     ("_", None)],
                 )])
 
         self.httpServerThread = None
+        self.webview = None
+        self.server_url = None
 
         # The menu generation code makes use of the TK_RV_MODE_NAME environment
         # variable. Each menu item that is created in RV is associated with a
         # mode identified by its name. We need to make a note of our name so we
         # can add menu items for this mode later.
+
         os.environ["TK_RV_MODE_NAME"] = self._mode_name
+
+    def gmaWebView (self, event) :
+
+        # rv.runtime.eval("require sgtk_webview_gma;", [])
+        # MuSymbol("sgtk_webview_gma.makeOne")()
+
+        import sgtk_webview_gma
+
+        self.webview = sgtk_webview_gma.pyGMAWindow(self.server_url)
+
+    def externalGMAPlayEntity(self, event):
+        self.httpEventCallback(event.name(), event.contents())
 
     def httpEventCallback(self, name, contents) :
         log.debug("callback ---------------------------- current thread " + str(QtCore.QThread.currentThread()))
@@ -111,7 +133,8 @@ class ToolkitBootstrap(rvt.MinorMode):
         sgtk_root_logger.addHandler(log_handler)
 
         # Get an authenticated user object from rv's security architecture
-        user = get_toolkit_user()
+        (user, url) = get_toolkit_user()
+        self.server_url = url
         log.info("Will connect using %r" % user)
 
         # Now do the bootstrap!

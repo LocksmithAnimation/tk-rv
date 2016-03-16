@@ -98,7 +98,7 @@ def get_toolkit_user():
     # wrap in an official user object
     user = ShotgunUser(internal_user_obj)
 
-    return user
+    return (user, url)
 
 def _get_default_rv_auth_session():
     """
