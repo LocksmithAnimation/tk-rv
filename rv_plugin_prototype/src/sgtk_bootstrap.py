@@ -12,6 +12,7 @@ import logging
 import cgi
 import sys
 import os
+import platform
 
 from PySide import QtCore
 
@@ -21,6 +22,16 @@ import rv
 import rv.rvtypes as rvt
 import rv.commands as rvc
 import rv.extra_commands as rve
+
+def sgtk_dist_dir():
+    executable_dir = os.path.dirname(os.environ["RV_APP_RV"])
+
+    if (platform.system == "Darwin"):
+        content_dir = os.path.split(os.path.split(executable_dir)[0])[0]
+    else:
+        content_dir = os.path.split(executable_dir)[0]
+    
+    return os.path.join(content_dir, "src", "python", "sgtk")
 
 class ToolkitBootstrap(rvt.MinorMode):
     """
@@ -66,9 +77,6 @@ class ToolkitBootstrap(rvt.MinorMode):
 
     def gmaWebView (self, event) :
 
-        # rv.runtime.eval("require sgtk_webview_gma;", [])
-        # MuSymbol("sgtk_webview_gma.makeOne")()
-
         import sgtk_webview_gma
 
         self.webview = sgtk_webview_gma.pyGMAWindow(self.server_url)
@@ -88,10 +96,8 @@ class ToolkitBootstrap(rvt.MinorMode):
         
     def httpServerSetup(self, event) :
         import sgtk_rvserver
-        log.debug("\n\n")
         self.httpServerThread = sgtk_rvserver.RvServerThread(self.httpEventCallback)
         self.httpServerThread.start()
-        log.debug("\n\n")
 
     def testCert(self, event) :
 
@@ -110,8 +116,10 @@ class ToolkitBootstrap(rvt.MinorMode):
         """
         rvt.MinorMode.activate(self)
 
-        core = os.path.join(os.path.dirname(__file__), "sgtk_core")
-        core = os.environ.get("TK_CORE") or core
+        bundle_cache_dir = os.path.join(sgtk_dist_dir(), "bundle_cache")
+
+        core = os.path.join(bundle_cache_dir, "manual", "tk-core", "v1.0.0")
+        core = os.environ.get("RV_TK_CORE") or core
 
         # append python path to get to the actual code
         core = os.path.join(core, "python")
@@ -127,9 +135,14 @@ class ToolkitBootstrap(rvt.MinorMode):
         # import authentication code
         from sgtk_auth import get_toolkit_user
 
+        # allow dev to override log level
+        log_level = logging.WARNING
+        if (os.environ["RV_TK_LOG_DEBUG"]) :
+            log_level = logging.DEBUG
+
         # bind toolkit logging to our logger
         sgtk_root_logger = shotgun_base.get_sgtk_logger()
-        sgtk_root_logger.setLevel(logging.WARNING)
+        sgtk_root_logger.setLevel(log_level)
         sgtk_root_logger.addHandler(log_handler)
 
         # Get an authenticated user object from rv's security architecture
@@ -145,14 +158,24 @@ class ToolkitBootstrap(rvt.MinorMode):
         # the site config for Maya or Desktop.
         mgr.namespace = "rv"
 
-        mgr.base_configuration = dict(
-            # type="dev",
-            # path=r"d:\repositories\tk-config-rv",
-            path="git@github.com:shotgunsoftware/tk-config-rv.git",
-            type="git_branch",
-            branch="master",
-            version="latest",
-        )
+        # In disted code, by default, all TK code is read from the
+        # 'bundle_cache' baked during the build process.
+        mgr.bundle_cache_fallback_paths = [ bundle_cache_dir ]
+
+        dev_config = os.environ["RV_TK_DEV_CONFIG"]
+
+        if (dev_config):
+            # Use designated developer's tk-config-rv instead of disted one.
+            mgr.base_configuration = dict(
+                type="dev",
+                path=dev_config,
+            )
+        else:
+            mgr.base_configuration = dict(
+                type="manual",
+                name="tk-config-rv",
+                version="v1.0.0",
+            )
 
         # Bootstrap the tk-rv engine into an empty context!
         mgr.bootstrap_engine("tk-rv")
