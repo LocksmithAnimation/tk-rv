@@ -40,6 +40,10 @@ class RVUserImpl(ShotgunUserImpl):
         self._session_token = session_token
         self._http_proxy = http_proxy
 
+        # The API must be notified that the session token in this case is the
+        # result of an RV licensing request.
+        self._session_product = "rv"
+
     def get_login(self):
         """
         Return the login name for this user.
@@ -55,6 +59,7 @@ class RVUserImpl(ShotgunUserImpl):
         return Shotgun(
             self.get_host(),
             session_token=self._session_token,
+            session_product=self._session_product,
             http_proxy=self._http_proxy
         )
 
