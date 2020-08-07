@@ -8,8 +8,11 @@
 # agreement to the Shotgun Pipeline Toolkit Source Code License. All rights 
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
+from __future__ import print_function
+
 import os
 import sys
+import logging
 
 import sgtk
 import rv.qtutils
@@ -155,22 +158,29 @@ class RVEngine(Engine):
     #####################################################################################
     # Logging
 
-    def log_debug(self, msg):
-        if self.get_setting("debug_logging", True):
-            msg = "DEBUG: tk-rv - %s" % msg
-            print >> sys.stderr, msg
+    def _emit_log_message(self, handler, record):
+        """
+        Called by the engine to log messages in Maya script editor.
+        All log messages from the toolkit logging namespace will be passed to this method.
 
-    def log_info(self, msg):
-        msg = "INFO: tk-rv - %s" % msg
-        print >> sys.stderr, msg
+        :param handler: Log handler that this message was dispatched from.
+                        Its default format is "[levelname basename] message".
+        :type handler: :class:`~python.logging.LogHandler`
+        :param record: Standard python logging record.
+        :type record: :class:`~python.logging.LogRecord`
+        """
+        # Give a standard format to the message:
+        #     Shotgun <basename>: <message>
+        # where "basename" is the leaf part of the logging record name,
+        # for example "tk-multi-shotgunpanel" or "qt_importer".
 
-    def log_warning(self, msg):
-        msg = "WARNING: tk-rv - %s" % msg
-        print >> sys.stderr, msg
+        formatter = logging.Formatter("%(levelname)s: tk-rv %(basename)s: %(message)s")
+        msg = formatter.format(record)
 
-    def log_error(self, msg):
-        msg = "ERROR: tk-rv - %s" % msg
-        print >> sys.stderr, msg
+        if record.levelno == logging.ERROR:
+            print(msg, file=sys.stderr)
+        else:
+            print(msg)
 
     #####################################################################################
     # General Utilities
