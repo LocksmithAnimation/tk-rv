@@ -1,0 +1,11 @@
+<RCC>
+  <qresource prefix="eng_icons">
+    <file>blank.png</file>
+    <file>close.png</file>
+    <file>close_hover.png</file>
+    <file>dock.png</file>
+    <file>dock_hover.png</file>
+    <file>undock.png</file>
+    <file>undock_hover.png</file>
+  </qresource>
+</RCC>

@@ -47,6 +47,14 @@ class RVEngine(Engine):
     # Properties
 
     @property
+    def context_change_allowed(self):
+        """
+        Whether the engine allows a context change without the need for a
+        restart.
+        """
+        return True
+
+    @property
     def host_info(self):
         """
         Returns information about the application hosting this engine.
@@ -99,6 +107,7 @@ class RVEngine(Engine):
 
         # Get Qt module regardless of version
         from sgtk.platform.qt import QtGui, QtCore
+        self.__qt_panels = {}
 
         # Here we're going to set the hyperlink text color to white
         # since the default is a dark blue that is pretty much unreadable
@@ -171,6 +180,11 @@ class RVEngine(Engine):
             self._menu_generator = tk_rv.MenuGenerator(self)
             self._menu_generator.create_menu()
 
+    def post_context_change(self, old_context, new_context):
+        if self._ui_enabled:
+            self._menu_generator.destroy_menu()
+            self._menu_generator.create_menu()
+
     def destroy_engine(self):
         """
         Tears down the engine and any menu items it has created.
@@ -235,6 +249,34 @@ class RVEngine(Engine):
         RV's bottom toolbar widget.
         """
         return rv.qtutils.sessionBottomToolBar()
+
+    def show_panel(self, panel_id, title, bundle, widget_class, area=None, *args, **kwargs):
+        from sgtk.platform.qt import QtGui, QtCore
+        if panel_id in self.__qt_panels:
+            dock_widget = self.__qt_panels[panel_id]
+        else:
+            parent = self.get_dialog_parent()
+            widget = self._create_widget(widget_class, *args, **kwargs)
+            self._apply_external_stylesheet(bundle, widget)
+            dock_widget = QtGui.QDockWidget("", parent)
+            self._apply_external_stylesheet(self, dock_widget)
+            dock_widget.setFocusPolicy(QtCore.Qt.NoFocus)
+            dock_widget.setObjectName(panel_id)
+            dock_widget.setWidget(widget)
+            dock_widget.setWindowTitle(title)
+            if area:
+                parent.addDockWidget(area, dock_widget)
+            widget.dock = dock_widget
+            dock_widget.setFloating(True)
+            dock_widget.setFloating(False)
+            dock_widget.destroyed.connect(self.close_panel)
+            self.__qt_panels[panel_id] = dock_widget
+        dock_widget.show()
+
+        return dock_widget
+
+    def close_panel(self, obj):
+        self.log_debug("Panel Closed")
 
     #####################################################################################
     # Styling

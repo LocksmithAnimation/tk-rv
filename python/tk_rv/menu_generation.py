@@ -33,7 +33,7 @@ class MenuGenerator(object):
 
         # For now we disable all context menu items, and the menu itself, for RV.
         # See register_command() in engine.py.
-        # self._context_menu = self._add_context_menu()
+        self._context_menu = self._add_context_menu()
 
         # Wrap each command that was registered with the engine in
         # an AppCommand object. This will make it easy to then add
@@ -107,12 +107,14 @@ class MenuGenerator(object):
                             command_added = True
                             break
                     else:
-                        # command_added to true inn order to not add the default menu item
+                        # command_added to true in order to not add the default menu item
                         command_added = True
 
             if not command_added:
                 if cmd.get_type() != "context_menu":
                     commands_by_menu[self.engine.default_menu_name].append(menu_item)
+                else:
+                    self._context_menu[1].append(menu_item)
 
         mode_menu_definition = []
 
@@ -127,6 +129,37 @@ class MenuGenerator(object):
             self.engine.toolkit_rv_mode_name, mode_menu_definition,
         )
 
+    def _add_context_menu(self):
+        """
+        Adds a context menu which displays the current context
+        """
+
+        ctx = self.engine.context
+        ctx_name = str(ctx)
+
+        # create the menu object
+        # the label expects a unicode object so we cast it to support when the context may
+        # contain info with non-ascii characters
+        submenu = []
+
+        # link to UI
+        submenu.append(
+            ("Jump to Shotgun", self._jump_to_sg, None, None)
+        )
+
+        # Add the menu item only when there are some file system locations.
+        if ctx.filesystem_locations:
+            submenu.append(
+                ("Jump to File System", self._jump_to_fs)
+            )
+
+        # divider (apps may register entries below this divider)
+        submenu.append(MenuGenerator.RV_MENU_SPACER)
+        
+        ctx_menu = (ctx_name, submenu)
+
+        return ctx_menu
+
     def destroy_menu(self):
         """
         Tears down the top-level menu in RV.
@@ -137,8 +170,42 @@ class MenuGenerator(object):
         #
         # TODO: Menu destruction. Right now we'll end up with duplicate
         # menu items if the context ever changes.
-        pass
+        rv.commands.defineModeMenu(
+            self.engine.toolkit_rv_mode_name, [(self.engine.default_menu_name, [])], True
+        )
 
+    def _jump_to_sg(self):
+        """
+        Jump to shotgun, launch web browser
+        :param state: The state of the menu item
+        :return: None
+        """
+        url = self._engine.context.shotgun_url
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl(url))
+
+    def _jump_to_fs(self):
+        """
+        Jump from context to File system action.
+        :param state: The state of the menu item
+        :return: None
+        """
+        # launch one window for each location on disk
+        paths = self._engine.context.filesystem_locations
+        for disk_location in paths:
+
+            # run the app
+            if sgtk.util.is_linux():
+                cmd = 'xdg-open "%s"' % disk_location
+            elif sgtk.util.is_macos():
+                cmd = 'open "%s"' % disk_location
+            elif sgtk.util.is_windows():
+                cmd = 'cmd.exe /C start "Folder" "%s"' % disk_location
+            else:
+                raise Exception("Platform '%s' is not supported." % sys.platform)
+
+            exit_code = os.system(cmd)
+            if exit_code != 0:
+                self._engine.logger.error("Failed to launch '%s'!", cmd)
 
 class AppCommand(object):
     """
@@ -182,16 +249,14 @@ class AppCommand(object):
         and an optional hotkey to associate with the item. This structure
         is what the RV menu system expects to receive.
         """
-        hotkey = self.properties.get("hotkey")
+        hotkey = self.properties.get("hotkey") or None
+        checked = self.properties.get("check") or None
 
-        if hotkey:
-            # Note that the None as the last argument pertains to a callback
-            # RV can use to ask whether the menu item should be enabled/disabled,
-            # and/or checked/unchecked. In our case we just want the default
-            # behavior, which is active and unchecked.
-            menu_item = (self.name, self.menu_item_callback, hotkey, None)
-        else:
-            menu_item = (self.name, self.menu_item_callback, None, None)
+        # Note that the None as the last argument pertains to a callback
+        # RV can use to ask whether the menu item should be enabled/disabled,
+        # and/or checked/unchecked. In our case we just want the default
+        # behavior, which is active and unchecked.
+        menu_item = (self.name, self.menu_item_callback, hotkey, checked)
 
         return menu_item
 

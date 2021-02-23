@@ -17,70 +17,7 @@ TK_RV_MODE_NAME = "tk_rv_mode"
 os.environ["TK_RV_MODE_NAME"] = TK_RV_MODE_NAME
 
 # Assuming Toolkit is available in the path.
-from tank_vendor.shotgun_api3 import Shotgun
-from tank_vendor.shotgun_authentication.user import ShotgunUser
-from tank_vendor.shotgun_authentication.user_impl import ShotgunUserImpl
 import sgtk
-
-
-class RVUserImpl(ShotgunUserImpl):
-    """
-    A user that authenticates to the Shotgun server using a session token.
-    """
-
-    def __init__(self, host, login, session_token, http_proxy):
-        """
-        Constructor.
-
-        :param host: Host for this Shotgun user.
-        :param login: Login name for the user.
-        :param session_token: Session token for the user. If session token is None
-            the session token will be looked for in the users file.
-        :param http_proxy: HTTP proxy to use with this host. Defaults to None.
-
-        :raises IncompleteCredentials: If there is not enough values
-            provided to initialize the user, this exception will be thrown.
-        """
-        super(RVUserImpl, self).__init__(host, http_proxy)
-
-        self._login = login
-        self._session_token = session_token
-
-    def get_login(self):
-        """
-        Return the login name for this user.
-
-        :returns: The login name string.
-        """
-        return self._login
-
-    def create_sg_connection(self):
-        """
-        Create a Shotgun instance using the script user's credentials.
-
-        :returns: A Shotgun instance.
-        """
-        return Shotgun(
-            self.get_host(),
-            session_token=self._session_token,
-            http_proxy=self.get_http_proxy(),
-        )
-
-    def __repr__(self):
-        """
-        Return a string reprensentation of the user.
-
-        :returns: A string containing login and site.
-        """
-        return "<RVUser %s @ %s>" % (self._login, self._host)
-
-    def __str__(self):
-        """
-        Return the name of the user.
-
-        :returns: A string.
-        """
-        return self._login
 
 
 class ShotgunToolkit(rvtypes.MinorMode):
