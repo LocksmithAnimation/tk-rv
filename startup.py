@@ -15,7 +15,6 @@ import sgtk
 from sgtk.platform import SoftwareLauncher, SoftwareVersion, LaunchInformation
 
 
-
 class RvLauncher(SoftwareLauncher):
     """
     Handles launching RV executables. Automatically starts up
@@ -43,15 +42,22 @@ class RvLauncher(SoftwareLauncher):
         """
         required_env = {}
 
-        required_env["TANK_ENGINE"] = self.engine_name
-        required_env["TANK_CONTEXT"] = sgtk.context.serialize(self.context)
-        required_env["RV_TK_CORE"] = os.path.dirname(sgtk.get_sgtk_module_path())
-        required_env["TK_CONFIG_RV_OVERRIDE"] = r"U:\dev\will.wilson\shotgun\configs\pipeline\config"
+        required_env["SGTK_ENGINE"] = self.engine_name
+        required_env["SGTK_CONTEXT"] = sgtk.context.serialize(self.context)
+        required_env["TK_CONFIG_RV_OVERRIDE"] = os.path.join(
+            self.sgtk.pipeline_configuration.get_path(), "config"
+        )
         required_env["RV_SUPPORT_PATH"] = os.path.join(self.disk_location, "startup")
-
+        required_env["RV_PREFS_CLOBBER_PATH"] = os.path.join(
+            self.disk_location, "startup"
+        )
+        required_env["RV_PROGRESSIVE_SOURCE_LOADING"] = "0"
+        required_env["TK_DEBUG"] = os.environ.get("TK_DEBUG") and "true" or ""
 
         if file_to_open:
             # Add the file name to open to the launch environment
             required_env["SGTK_FILE_TO_OPEN"] = file_to_open
+
+        rvpkg = os.path.join(os.path.dirname(exec_path), "rvpkg.exe")
 
         return LaunchInformation(exec_path, args, required_env)
