@@ -371,36 +371,15 @@ class ToolkitBootstrap(rvt.MinorMode):
                 file=sys.stderr,
             )
 
-            # If you want to take over the RV integration for development purpose, you tell Toolkit
-            # where the config is. Most likely, it's going to be the tk-config-rv folder
-            # inside the config to keep things simple.
-            config_location_override = os.environ.get("TK_CONFIG_RV_OVERRIDE")
-            log.info("CONFIG: {}".format(config_location_override))
-            if config_location_override:
-                mgr.base_configuration = "sgtk:descriptor:path?path={}".format(
-                    config_location_override
-                )
+            plugin_info = _get_plugin_info()
 
-            # tell the bootstrap API that we don't want to
-            # allow for overrides from Shotgun
-            mgr.do_shotgun_config_lookup = False
+            mgr.base_configuration = plugin_info["base_configuration"]
+            mgr.plugin_id = plugin_info["plugin_id"]
+            mgr.bundle_cache_fallback_paths = [
+                os.path.join(__file__, "..", "bundle_cache")
+            ]
 
-            context = None
-
-            # Bootstrap the tk-rv engine into an empty context!
-            if os.environ.get("SGTK_CONTEXT"):
-                try:
-                    context = sgtk.context.deserialize(os.environ.get("SGTK_CONTEXT"))
-                except Exception as e:
-                    err = traceback.format_exc()
-                    log.error(
-                        "WARNING: Could not create context! Tank will be disabled: {0}".format(
-                            traceback.format_exc()
-                        ),
-                        file=sys.stderr,
-                    )
-
-            entity = context and context.task or context.entity or context.project
+            entity = mgr.get_entity_from_environment()
 
             mgr.bootstrap_engine_async(
                 "tk-rv",
@@ -620,6 +599,48 @@ def createMode():
     to create your mode.
     """
     return ToolkitBootstrap()
+
+
+def _get_plugin_info():
+    """
+    Returns a dictionary of information about the plugin of the form:
+
+        {
+            plugin_id: <plugin id>,
+            base_configuration: <config descriptor>
+        }
+    """
+
+    try:
+        # first, see if we can get the info from the manifest. if we can, no
+        # need to parse info.yml
+        from sgtk_plugin_basic_rv import manifest
+
+        plugin_id = manifest.plugin_id
+        base_configuration = manifest.base_configuration
+    except ImportError:
+        # no manifest, running in situ from the engine. just parse the info.yml
+        # file to get at the info we need.
+
+        # import the yaml parser
+        from tank_vendor import yaml
+
+        # build the path to the info.yml file
+        plugin_info_yml = os.path.abspath(
+            os.path.join(__file__, "..", "..", "info.yml")
+        )
+
+        # open the yaml file and read the data
+        with open(plugin_info_yml, "r") as plugin_info_fh:
+            info_yml = yaml.load(plugin_info_fh)
+            plugin_id = info_yml["plugin_id"]
+            base_configuration = info_yml["base_configuration"]
+
+    # return a dictionary with the required info
+    return dict(
+        plugin_id=plugin_id,
+        base_configuration=base_configuration,
+    )
 
 
 ###############################################################################
