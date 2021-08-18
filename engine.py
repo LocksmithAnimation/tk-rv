@@ -72,10 +72,10 @@ class RVEngine(Engine):
         :returns:   str
         """
 
-        # XXX Set "Shotgun" as the default top level menu, so that we don't
+        # XXX Set "ShotGrid" as the default top level menu, so that we don't
         # create another empty menu.  Eventually we'll want somewhere to store
         # "user apps" but we're not ready for that yet anyway.
-        return "Shotgun"
+        return "ShotGrid"
 
     @property
     def toolkit_rv_mode_name(self):
@@ -107,6 +107,7 @@ class RVEngine(Engine):
 
         # Get Qt module regardless of version
         from sgtk.platform.qt import QtGui, QtCore
+
         self.__qt_panels = {}
 
         # Here we're going to set the hyperlink text color to white
@@ -250,8 +251,11 @@ class RVEngine(Engine):
         """
         return rv.qtutils.sessionBottomToolBar()
 
-    def show_panel(self, panel_id, title, bundle, widget_class, area=None, *args, **kwargs):
+    def show_panel(
+        self, panel_id, title, bundle, widget_class, area=None, *args, **kwargs
+    ):
         from sgtk.platform.qt import QtGui, QtCore
+
         if panel_id in self.__qt_panels:
             dock_widget = self.__qt_panels[panel_id]
         else:
