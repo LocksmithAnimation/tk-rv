@@ -181,6 +181,13 @@ class RVEngine(Engine):
             self._menu_generator = tk_rv.MenuGenerator(self)
             self._menu_generator.create_menu()
 
+        # Check if a file was specified to open and open it.
+        file_to_open = os.environ.get("SGTK_FILE_TO_OPEN")
+        if file_to_open:
+            self.log_info(f"Shotgun: Opening '{file_to_open}'...")
+            self.commands["RV Playlist"]["callback"](file_to_open)
+            del os.environ["SGTK_FILE_TO_OPEN"]
+
     def post_context_change(self, old_context, new_context):
         if self._ui_enabled:
             self._menu_generator.destroy_menu()

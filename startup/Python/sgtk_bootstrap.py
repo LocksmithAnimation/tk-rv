@@ -406,13 +406,6 @@ class ToolkitBootstrap(rvt.MinorMode):
             rve.displayFeedback2("", 0.1)
             # raise
 
-        # Check if a file was specified to open and open it.
-        file_to_open = os.environ.get("SGTK_FILE_TO_OPEN")
-        if file_to_open:
-            log.info("Shotgun: Opening '%s'..." % file_to_open)
-            rvc.addSource(file_to_open)
-            del os.environ["SGTK_FILE_TO_OPEN"]
-
         # for var in ["SGTK_ENGINE", "SGTK_CONTEXT", "SGTK_FILE_TO_OPEN"]:
         #     if var in os.environ:
         #         del os.environ[var]
