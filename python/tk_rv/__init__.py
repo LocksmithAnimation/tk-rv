@@ -9,4 +9,5 @@
 # not expressly granted therein are reserved by Shotgun Software Inc.
 
 from .menu_generation import MenuGenerator
+from .rv_dialog import RvDialog
 from .ui import resources_rc

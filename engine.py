@@ -292,15 +292,16 @@ class RVEngine(Engine):
     #####################################################################################
     # Styling
 
-    def _create_dialog(self, *args, **kwargs):
+    def _create_dialog(self, title, bundle, widget, parent):
         """
         Overrides and extends the default _create_dialog implementation
         from sgtk.platform.engine.Engine. Dialogs are created as is typical,
         and then have the tk-rv engine-specific style.qss file applies to
         them.
         """
-        dialog = super(RVEngine, self)._create_dialog(*args, **kwargs)
+        dialog = super(RVEngine, self)._create_dialog(title, bundle, widget, parent)
         self._apply_external_styleshet(self, dialog)
+        # self._apply_external_styleshet(bundle, widget)
         return dialog
 
     def reload_qss(self):
