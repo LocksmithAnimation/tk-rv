@@ -38,7 +38,11 @@ class MenuGenerator(object):
         # Wrap each command that was registered with the engine in
         # an AppCommand object. This will make it easy to then add
         # those commands to our menu in RV.
-        menu_commands = [AppCommand(n, d) for n, d in self.engine.commands.items()]
+        menu_commands = [
+            AppCommand(n, d)
+            for n, d in self.engine.commands.items()
+            if not d["properties"].get("hide")
+        ]
 
         # All of the commands will be sorted by name in the menu.
         menu_commands.sort(key=lambda x: x.name)
@@ -126,7 +130,8 @@ class MenuGenerator(object):
             mode_menu_definition.append((menu_name, menu_items))
 
         rv.commands.defineModeMenu(
-            self.engine.toolkit_rv_mode_name, mode_menu_definition,
+            self.engine.toolkit_rv_mode_name,
+            mode_menu_definition,
         )
 
     def _add_context_menu(self):
@@ -143,19 +148,15 @@ class MenuGenerator(object):
         submenu = []
 
         # link to UI
-        submenu.append(
-            ("Jump to Shotgun", self._jump_to_sg, None, None)
-        )
+        submenu.append(("Jump to Shotgun", self._jump_to_sg, None, None))
 
         # Add the menu item only when there are some file system locations.
         if ctx.filesystem_locations:
-            submenu.append(
-                ("Jump to File System", self._jump_to_fs)
-            )
+            submenu.append(("Jump to File System", self._jump_to_fs))
 
         # divider (apps may register entries below this divider)
         submenu.append(MenuGenerator.RV_MENU_SPACER)
-        
+
         ctx_menu = (ctx_name, submenu)
 
         return ctx_menu
@@ -171,7 +172,9 @@ class MenuGenerator(object):
         # TODO: Menu destruction. Right now we'll end up with duplicate
         # menu items if the context ever changes.
         rv.commands.defineModeMenu(
-            self.engine.toolkit_rv_mode_name, [(self.engine.default_menu_name, [])], True
+            self.engine.toolkit_rv_mode_name,
+            [(self.engine.default_menu_name, [])],
+            True,
         )
 
     def _jump_to_sg(self):
@@ -206,6 +209,7 @@ class MenuGenerator(object):
             exit_code = os.system(cmd)
             if exit_code != 0:
                 self._engine.logger.error("Failed to launch '%s'!", cmd)
+
 
 class AppCommand(object):
     """

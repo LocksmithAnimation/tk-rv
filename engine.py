@@ -17,6 +17,7 @@ import rv.qtutils
 import rv.commands
 
 from sgtk.platform import Engine, constants
+from sgtk.errors import TankError
 
 
 class RVEngine(Engine):
@@ -96,6 +97,13 @@ class RVEngine(Engine):
         :returns:   task_manager.BackgroundTaskManager
         """
         return self._bg_task_manager
+
+    def load_cut(self, paths):
+        command = self.commands.get("RV Playlist Open File")
+        if command:
+            command["callback"](paths)
+        else:
+            raise TankError("RV Playlist Open File command is not registered.")
 
     #####################################################################################
     # Engine Initialization and Destruction
@@ -185,7 +193,7 @@ class RVEngine(Engine):
         file_to_open = os.environ.get("SGTK_FILE_TO_OPEN")
         if file_to_open:
             self.log_info(f"Shotgun: Opening '{file_to_open}'...")
-            self.commands["RV Playlist"]["callback"](file_to_open)
+            self.load_cut(file_to_open)
             del os.environ["SGTK_FILE_TO_OPEN"]
 
     def post_context_change(self, old_context, new_context):
@@ -201,6 +209,10 @@ class RVEngine(Engine):
 
         if self._ui_enabled:
             self._menu_generator.destroy_menu()
+            # for panel in self.__qt_panels.values():
+            #     panel.close()
+            #     panel.deleteLater()
+            self.__qt_panels = {}
 
         self.bg_task_manager.shut_down()
 
@@ -263,13 +275,18 @@ class RVEngine(Engine):
     ):
         from sgtk.platform.qt import QtGui, QtCore
 
+        class RvDockWidget(QtGui.QDockWidget):
+            def closeEvent(self, event):
+                self.widget().close()
+                return super().closeEvent(event)
+
         if panel_id in self.__qt_panels:
             dock_widget = self.__qt_panels[panel_id]
         else:
             parent = self.get_dialog_parent()
             widget = self._create_widget(widget_class, *args, **kwargs)
             self._apply_external_stylesheet(bundle, widget)
-            dock_widget = QtGui.QDockWidget("", parent)
+            dock_widget = RvDockWidget("", parent)
             self._apply_external_stylesheet(self, dock_widget)
             dock_widget.setFocusPolicy(QtCore.Qt.NoFocus)
             dock_widget.setObjectName(panel_id)
@@ -277,17 +294,12 @@ class RVEngine(Engine):
             dock_widget.setWindowTitle(title)
             if area:
                 parent.addDockWidget(area, dock_widget)
-            widget.dock = dock_widget
             dock_widget.setFloating(True)
             dock_widget.setFloating(False)
-            dock_widget.destroyed.connect(self.close_panel)
             self.__qt_panels[panel_id] = dock_widget
         dock_widget.show()
 
         return dock_widget
-
-    def close_panel(self, obj):
-        self.log_debug("Panel Closed")
 
     #####################################################################################
     # Styling
