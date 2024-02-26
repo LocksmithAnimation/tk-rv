@@ -35,7 +35,6 @@ BOOTSTRAPING_ENV_VAR = "RV_ENGINE_BOOTSTRAPING"
 
 
 def sgtk_dist_dir():
-
     # Add the path to sgtk in a release
     executable_dir = os.path.dirname(os.environ["RV_APP_RV"])
 
@@ -114,7 +113,6 @@ class ToolkitBootstrap(rvt.MinorMode):
         self.pre_process_event_pair(event.name(), event.contents())
 
     def pre_process_event_pair(self, name, contents):
-
         if self.licensing_style == "":
             self.licensing_style = rvc.readSettings(
                 "Licensing", "activeLicensingStyle", ""
@@ -145,7 +143,6 @@ class ToolkitBootstrap(rvt.MinorMode):
                     self.init_and_process_events()
 
     def process_event(self, name, contents):
-
         print(
             "INFO: Processing event '%s' %g seconds after startup.\n"
             % (name, rvc.theTime() - self.startup_time),
@@ -281,7 +278,6 @@ class ToolkitBootstrap(rvt.MinorMode):
     # Some package will try to re-bootstrap the toolkit, if the engine is already running we return without bootstraping
     # We use QSemaphore to avoid bootstrapping while there is already a bootstrap in progress
     def initialize_toolkit(self):
-
         # bootstrap callbacks
         def completed(e):
             self.process_queued_events()
@@ -448,7 +444,6 @@ class ToolkitBootstrap(rvt.MinorMode):
         self.init_and_process_events()
 
     def launch_submit_tool(self):
-
         # Flag the session as "sgreview.submitInProgress" so JS submit tool
         # code can tell this is not Screening Room.
         #
@@ -648,6 +643,7 @@ def _get_plugin_info():
 
 log = logging.getLogger("sgtk_rv_bootstrap")
 log.setLevel(logging.INFO)
+
 
 # note: the RV console treats log information as html. As a consequence, all
 # <html like tokens> will simply disappear when shown in the RV console. These
