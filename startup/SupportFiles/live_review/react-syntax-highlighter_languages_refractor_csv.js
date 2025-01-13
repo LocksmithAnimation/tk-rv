@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkmy_webpack_project=self.webpackChunkmy_webpack_project||[]).push([[72526],{78090:e=>{function a(e){e.languages.csv={value:/[^\r\n,"]+|"(?:[^"]|"")*"(?!")/,punctuation:/,/}}e.exports=a,a.displayName="csv",a.aliases=[]}}]);

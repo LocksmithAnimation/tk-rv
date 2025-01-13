@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkmy_webpack_project=self.webpackChunkmy_webpack_project||[]).push([[13208],{13208:(e,t,h)=>{h.r(t),h.d(t,{default:()=>a});const a={name:"svg",type:"element",attributes:{viewBox:"0 0 16 16"},children:[{name:"path",type:"element",attributes:{d:"M0 11h16v3H0zM8 0v6h3v4h2V6h3V0zm7 3H9V1h6zM1 15h14v1H1z"},children:[]}]}}}]);

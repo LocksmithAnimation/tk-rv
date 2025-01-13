@@ -32,7 +32,7 @@ class RvLauncher(SoftwareLauncher):
     def prepare_launch(self, exec_path, args, file_to_open=None):
         """
         Prepares an environment to launch RV in that will automatically
-        load Toolkit and the tk-crv engine when RV starts.
+        load Toolkit and the tk-rv engine when RV starts.
 
         :param str exec_path: Path to RV executable to launch.
         :param str args: Command line arguments as strings.
